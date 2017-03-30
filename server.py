@@ -9,16 +9,21 @@ Created on Thu Mar 30 20:13:45 2017
 import getInfo
 import time
 
+content_copy = content
 while(1):
     content = getInfo.write()
     if not content:
         print 'sleep....'
         time.sleep(60)
-    else:
+    elif content != content_copy:
         getInfo.send(content)
-        is_send = True
         print 'sleep....'
-        time.sleep(43200)
+        time.sleep(60)
+        content_copy = content
+    else:
+        time.sleep(60)
+        continue
+    
 
     
 
