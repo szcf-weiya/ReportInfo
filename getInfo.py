@@ -84,6 +84,8 @@ def getDate(soup):
             continue
     
     latest = []
+    if not newsdate:
+        return None
     latest.append(newsdate[0])
     for i in xrange(len(newsdate)):
         if newsdate[i] > latest[len(latest)-1]:
