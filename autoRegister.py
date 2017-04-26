@@ -8,7 +8,6 @@ Created on Fri Apr 21 01:08:34 2017
 
 import requests
 from bs4 import BeautifulSoup as bs
-import re
 
 def get_session_id(raw_resp):
     soup = bs(raw_resp.text, 'lxml')
@@ -16,19 +15,24 @@ def get_session_id(raw_resp):
     return token
 
 payload = {
-    'entry[field_1]': 'test',  
-    'entry[field_2]': '1234567890',  
-    'entry[field_3]': '1401',
-    'entry[field_4]': '18888888888',
+    'entry[field_1]': '3140000000',  # 21st checkbox# xuehao 
+    'entry[field_2]': 'test1',  # first input-field
+    'entry[field_3]': 'test',
+    'entry[field_4]': '17800000000',
     }
-
-url = r'https://jinshuju.net/f/uc93vs'
-
-with requests.session() as s:
-    resp = s.get(url)
-    payload['authenticity_token'] = get_session_id(resp)
-    response_post = s.post(url, data=payload)
-    soup = bs(response_post.text, 'lxml');
-    msg = soup.find_all('div', {'class': 'message'})[0].string
-    print msg
+def autoRegister(url):    
+    with requests.session() as s:
+        resp = s.get(url)
+        payload['authenticity_token'] = get_session_id(resp)
+        response_post = s.post(url, data=payload)
+        soup = bs(response_post.text, 'lxml')
+        msg = soup.find_all('div', {'class': 'message'})[0].string
+        # if necessary
+        # msg.encode('utf8')
+        print msg
+        
+if __name__ == '__main__':
+    #url = r'https://jinshuju.net/f/NvvjuS'
+    url = r'https://jinshuju.net/f/uc93vs'
+    autoRegister(url)
 #    print response_post.text
