@@ -1,2 +1,2 @@
 # ReportInfo
-Get the report information.
+Get the report information on time.
