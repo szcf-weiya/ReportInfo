@@ -9,17 +9,18 @@ Created on Thu Mar 30 16:43:45 2017
 import requests
 from bs4 import BeautifulSoup
 import re
+import json
 
 from smtplib import SMTP
-import smtplib
-import json
-from email import Encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
+#import smtplib
+#from email import Encoders
+#from email.mime.base import MIMEBase
+#from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.header import Header
 
-from datetime import date
+from datetime import date, timedelta
+import time
 
 def visit():
     session = requests.Session()
@@ -28,7 +29,7 @@ def visit():
     try:
         req = session.get(url)
         if req.status_code == 200:
-            print 'This session work.'
+            pass#print 'This session work.'
         else:
             print 'Not work'
     except:
@@ -42,6 +43,11 @@ def visit():
     content = page.decode('gb2312')
     #soup = BeautifulSoup(content, 'lxml')
     soup = BeautifulSoup(content, 'html.parser')
+    for match in soup.findAll('font'):
+        match.unwrap()
+    for match in soup.findAll('span'):
+        match.unwrap()
+    soup = BeautifulSoup(str(soup), 'html.parser')
     return(soup)
 
 def getLink(soup):
@@ -54,44 +60,72 @@ def getLink(soup):
         tmp = link[i]
         url = tmp['href']
         if link_pattern.findall(url):
+            if len(urlList) >= 1 and url == urlList[len(urlList)-1]:
+                continue
             urlList.append(url)
     
     return(urlList)
 
-def getDate(soup):    
-    news = soup.find('td', {"class":"NewsBody"}).findAll('p')
-    date_pattern = re.compile("([1-9]\.[0-9]{1,2})")
+def getDate(soup, num):
+    #news = soup.find('td', {"class":"NewsBody"}).findAll('p')
+    news = soup.find('td', {"class":"NewsBody"}).find_all('p')
+    #print(len(news))
+    date_pattern = re.compile(u'([1-9]{1,2}\u6708[0-9]{1,2}\u65e5)') # 不要双斜杠
     datelist = []
+    details = []
+#    for i in xrange(len(news)):
+#        for child in news[i].children:
+#            try:
+#                info = date_pattern.findall(str(child))
+#                if len(info) >= 1:
+#                    datelist.append(info[0])
+#            except:
+#                continue
+
     for i in xrange(len(news)):
-        for child in news[i].children:
-            try:
-                info = date_pattern.findall(str(child))
-                if len(info) >= 1:
-                    datelist.append(info[0])
-            except:
-                continue
-            
-    newsdate = []
-    today = date.today()
-    for i in xrange(len(datelist)):
-        tmp = datelist[i]
-        m, d = tmp.split('.')
         try:
-            tmp = date(today.year, int(m), int(d))
-            if tmp >= today:
-                newsdate.append(tmp)
+            info = date_pattern.findall(str(news[i]).decode('utf8'))
+            if len(info) >= 1:
+                #print info[0]
+                #print news[i].string
+                s1 = news[i].string
+                s2 = u'\uff09'
+                nPos = s1.index(s2)
+                #tmp2 = s1[nPos+1:]
+                #tmp1, tmp2 = news[i].string.split(u'\uff08'+info+u'\uff09')
+                #print tmp2
+                details.append(s1[nPos+1:])
+                datelist.append(info[0])
         except:
             continue
-    
-    latest = []
-    if not newsdate:
-        return None
-    latest.append(newsdate[0])
-    for i in xrange(len(newsdate)):
-        if newsdate[i] > latest[len(latest)-1]:
-            latest.append(newsdate)
+    #print(len(datelist))
+    newsdate = []
+    newdetails = []
+    today = date.today() - timedelta(num)
+    for i in xrange(len(datelist)):
+        tmp = datelist[i]
+        m, d = tmp.split(u'\u6708')
+        d, l = d.split(u'\u65e5')
+        try:
+            tmp = date(today.year, int(m), int(d))
+            if int(m) >= 11: # @2018.02.27 new semster skip the reports from 2017.11.01 to 2017.12.31
+                continue
+            if tmp >= today:
+                newsdate.append(tmp)
+                newdetails.append(details[i])
+        except:
+            continue
+
+#    latest = []
+## 正序
+#    if not newsdate:
+#        return None
+#    latest.append(newsdate[0])
+#    for i in xrange(len(newsdate)):
+#        if newsdate[i] > latest[len(latest)-1]:
+#            latest.append(newsdate)
             
-    return(latest)
+    return([newsdate, newdetails])
         
 
 #def sendMail(fromEmail, username,  password, serverAddress, subject, htmlContent, toEmail):
@@ -135,8 +169,93 @@ def send_email(SMTP_host, from_account, from_passwd, to_account, subject, conten
 
     email_client.quit()
 
+def getLatest():
+    soup = visit()
+    latest, details = getDate(soup, 0)
+    content = "Update at " + time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) + "\n"
+    if not latest:
+        pass
+        content = content + "No New Seminar Yet!!\n"
+    else:
+        print len(latest)
+        content = content + "New Seminar!!\n"
+        urlList = getLink(soup)        
+        for i in xrange(len(latest)):
+            content = content + date.strftime(latest[i], '%Y.%m.%d') + " : "  + urlList[i] + "\n"
+    print(content)
+    return(content)
+    
+def sendSMS():
+    soup = visit()
+    latest, details = getDate(soup, 40)
+    content = ""
+    if not latest:
+        return None
+    else:
+        print len(latest)
+        content = content + "New Seminar!!\n"
+        urlList = getLink(soup)        
+        for i in xrange(len(latest)):
+            content = content + date.strftime(latest[i], '%Y.%m.%d') + " : "  + urlList[i] + "\n"
+    return(content)
+
+def getHistory():
+    soup = visit()
+    latest, details = getDate(soup, 7)
+    today = date.today()
+    flag = 1
+    hist_len = len(latest)
+    for i in xrange(hist_len):
+        if (latest[i] >= today):
+            continue
+        else:
+            flag = 0
+            break
+    pos = i
+    content = u"上一周学术讲座信息\n"
+    if flag == 1:
+        pass
+        content = content + u"上周没有学术讲座！\n"
+    else:
+        content = content + u"上周共" + str(len(latest)-pos) + u"场讲座\n"
+        urlList = getLink(soup)        
+        for j in xrange(len(latest)-pos):
+            content = content + date.strftime(latest[pos+j], '%Y.%m.%d') + " : "  + urlList[pos+j] + "\n"
+    print(content)
+    return(content.encode('utf8'))
 
 
+    
+def returnJson():
+    # make a copy of original stdout route
+    #stdout_backup = sys.stdout
+    #log_file = open("message.log", "w")
+    # redirect print output to log file
+    #sys.stdout = log_file
+    soup = visit()
+    latest, details = getDate(soup, 0)
+    #log_file.close()
+    # restore the output to initial pattern
+    #sys.stdout = stdout_backup
+    num = len(latest)
+    full_res = {}
+    if not latest:
+        latest, details = getDate(soup, 7)
+    urlList = getLink(soup)        
+    for i in xrange(len(latest)):
+        res = {}
+        res["date"] = date.strftime(latest[i], '%Y.%m.%d') 
+        if num == 0:
+            pass
+        else:    
+            res["url"] = urlList[i]
+        res["details"] = details[i]
+        full_res[i] = res
+    content = {}
+    content["full_res"] = full_res
+    content["num"] = num
+    jsonStr = json.dumps(content)
+    return(jsonStr)    
 
 def write():
     soup = visit()
@@ -145,7 +264,7 @@ def write():
     print(urlList[0])
     for i in range(1, len(urlList)):
         print(urlList[i])
-    latest = getDate(soup)
+    latest, details = getDate(soup)
     content = "Hello"
     if not latest:
         return (content)
@@ -158,14 +277,16 @@ def write():
     return(content)
     
 def send(content):
-    send_email(SMTP_host='***',
-           from_account='***',
+    send_email(SMTP_host='smtp.zju.edu.cn:25',
+           from_account='weiya@zju.edu.cn',
            from_passwd='***',
-           to_account=['***'],
+           to_account=['szcfweiya@gmail.com'],
            subject='new report!!!',   
            content=content)
     
-
 if __name__ == '__main__':
     #send(write())
-    write()
+    #write()
+    #getLatest()
+    print(sendSMS())
+    #print returnJson()
