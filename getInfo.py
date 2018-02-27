@@ -185,19 +185,6 @@ def getLatest():
     print(content)
     return(content)
     
-def sendSMS():
-    soup = visit()
-    latest, details = getDate(soup, 40)
-    content = ""
-    if not latest:
-        return None
-    else:
-        print len(latest)
-        content = content + "New Seminar!!\n"
-        urlList = getLink(soup)        
-        for i in xrange(len(latest)):
-            content = content + date.strftime(latest[i], '%Y.%m.%d') + " : "  + urlList[i] + "\n"
-    return(content)
 
 def getHistory():
     soup = visit()
@@ -260,20 +247,21 @@ def returnJson():
 def write():
     soup = visit()
     urlList = getLink(soup)
-    print(len(urlList))
-    print(urlList[0])
-    for i in range(1, len(urlList)):
-        print(urlList[i])
-    latest, details = getDate(soup)
-    content = "Hello"
+    #print(len(urlList))
+    #print(urlList[0])
+    #for i in range(1, len(urlList)):
+    #    print(urlList[i])
+    latest, details = getDate(soup, 0)
+    content = ""
     if not latest:
         return (content)
     
     for i in xrange(len(latest)):
-        content = content + date.strftime(latest[i], '%Y.%m.%d') + " : "  + urlList[len(urlList)-1-i] + "\n"
-        print(content)
+        #content = content + date.strftime(latest[i], '%Y.%m.%d') + " : "  + urlList[len(urlList)-1-i] + "\n"
+        #for sms
+        content = content + date.strftime(latest[i], '%m.%d') + ": "  + urlList[len(urlList)-1-i]
         
-    content = content + "---from python(by weiya)"
+    #content = content + "---from python(by weiya)"
     return(content)
     
 def send(content):
@@ -283,10 +271,29 @@ def send(content):
            to_account=['szcfweiya@gmail.com'],
            subject='new report!!!',   
            content=content)
+
+def sendSMS(content):
+    url = 'https://sms-api.upyun.com/api/messages'
+    mobiles = ['17816859236']
     
+    postdata = {
+        'mobile' : '...',
+        'template_id': 1162,
+        'vars' : '...'
+        }
+    headers = {
+        'Content-type' : 'application/x-www-form-urlencoded',
+        'Authorization': '*******'
+        }
+    postdata['vars'] = content
+    for i in xrange(len(mobiles)):
+        postdata['mobile'] = mobiles[i]
+        requests.post(url, headers = headers, data=postdata)        
+
 if __name__ == '__main__':
     #send(write())
-    #write()
+    print(write())
+    #sendSMS(write())
     #getLatest()
-    print(sendSMS())
+    #print(sendSMS())
     #print returnJson()
