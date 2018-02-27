@@ -45,7 +45,7 @@ def visit():
     return(soup)
 
 def getLink(soup):
-    link_pattern = re.compile('jinshuju')
+    link_pattern = re.compile('mikecrm')
     
     link = soup.find('td', {"class":"NewsBody"}).findAll('a')
     
@@ -141,10 +141,15 @@ def send_email(SMTP_host, from_account, from_passwd, to_account, subject, conten
 def write():
     soup = visit()
     urlList = getLink(soup)
+    print(len(urlList))
+    print(urlList[0])
+    for i in range(1, len(urlList)):
+        print(urlList[i])
     latest = getDate(soup)
+    content = "Hello"
     if not latest:
-        return (None)
-    content = ""
+        return (content)
+    
     for i in xrange(len(latest)):
         content = content + date.strftime(latest[i], '%Y.%m.%d') + " : "  + urlList[len(urlList)-1-i] + "\n"
         print(content)
@@ -153,14 +158,14 @@ def write():
     return(content)
     
 def send(content):
-    send_email(SMTP_host='smtp.email.com:25',
-           from_account='from@email.com',
-           from_passwd='password',
-           to_account=['to@email.com'],
+    send_email(SMTP_host='***',
+           from_account='***',
+           from_passwd='***',
+           to_account=['***'],
            subject='new report!!!',   
            content=content)
     
 
 if __name__ == '__main__':
-    send(write())
-
+    #send(write())
+    write()
