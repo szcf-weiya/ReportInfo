@@ -278,7 +278,7 @@ def sendSMS(content):
     
     postdata = {
         'mobile' : '...',
-        'template_id': 1162,
+        'template_id': 1220,
         'vars' : '...'
         }
     headers = {
