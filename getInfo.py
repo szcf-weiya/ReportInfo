@@ -266,7 +266,7 @@ def write():
     
 def send(content):
     send_email(SMTP_host='smtp.zju.edu.cn:25',
-           from_account='weiya@zju.edu.cn',
+           from_account='*********',
            from_passwd='***',
            to_account=['szcfweiya@gmail.com'],
            subject='new report!!!',   
@@ -274,7 +274,7 @@ def send(content):
 
 def sendSMS(content):
     url = 'https://sms-api.upyun.com/api/messages'
-    mobiles = ['17816859236']
+    mobiles = ['********']
     
     postdata = {
         'mobile' : '...',
